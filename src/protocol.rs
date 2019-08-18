@@ -1,6 +1,6 @@
 use std::io;
 
-use bytes::{BytesMut, Bytes, Buf, BufMut, IntoBuf};
+use bytes::{Buf, BufMut, Bytes, BytesMut, IntoBuf};
 use tokio::codec::{Decoder, Encoder};
 
 #[derive(Debug, PartialEq)]
@@ -29,9 +29,7 @@ pub struct Protocol {
 
 impl Protocol {
     pub fn new() -> Protocol {
-        Protocol {
-            len: None,
-        }
+        Protocol { len: None }
     }
 }
 
@@ -65,12 +63,11 @@ impl Decoder for Protocol {
 
                 self.len = None;
                 Ok(Some(Request {
-                            reqtype: RequestType::Write,
-                            id: id,
-                            uuid: uuid,
-                            body: Some(body),
-                        }))
-
+                    reqtype: RequestType::Write,
+                    id: id,
+                    uuid: uuid,
+                    body: Some(body),
+                }))
             }
 
             b'R' => {
@@ -83,11 +80,11 @@ impl Decoder for Protocol {
 
                 self.len = None;
                 Ok(Some(Request {
-                            reqtype: RequestType::Read,
-                            id: id,
-                            uuid: uuid,
-                            body: None,
-                        }))
+                    reqtype: RequestType::Read,
+                    id: id,
+                    uuid: uuid,
+                    body: None,
+                }))
             }
 
             any => {
@@ -110,15 +107,12 @@ impl Encoder for Protocol {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use byteorder::{ByteOrder, BigEndian};
-    use bytes::{BytesMut, Buf, BufMut, IntoBuf};
-
+    use bytes::{Buf, BufMut, BytesMut, IntoBuf};
     use tokio::codec::{Decoder, Encoder};
-    use {Protocol, Request, RequestType, Response};
 
+    use super::{Protocol, RequestType, Response};
 
     #[test]
     fn decode_write() {
@@ -171,7 +165,7 @@ mod tests {
 
     #[test]
     fn encode() {
-        let uuid = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+        //let uuid = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
         let reqid = 42;
         let mut body = BytesMut::with_capacity(4);
         body.put_u32_be(45);
@@ -187,10 +181,9 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(10, encoded.len());
 
-
-        assert_eq!(42, encoded.split_to(4).into_buf().get_u32::<BigEndian>());
-        assert_eq!(4, encoded.split_to(2).into_buf().get_u16::<BigEndian>());
-        assert_eq!(45, encoded.split_to(4).into_buf().get_u32::<BigEndian>());
+        assert_eq!(42, encoded.split_to(4).into_buf().get_u32_be());
+        assert_eq!(4, encoded.split_to(2).into_buf().get_u16_be());
+        assert_eq!(45, encoded.split_to(4).into_buf().get_u32_be());
         assert_eq!(0, encoded.len());
     }
 }

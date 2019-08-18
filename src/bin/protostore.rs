@@ -1,14 +1,15 @@
 #![feature(async_await)]
 
-use tokio::net::{TcpListener};
+use tokio::net::TcpListener;
 
 use tokio::runtime::current_thread;
 
 use futures::future;
 
 use std::cmp;
+use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::mpsc;
+use std::sync::{mpsc, Arc};
 use std::thread;
 
 use libc;
@@ -18,8 +19,7 @@ use hwloc::{CpuSet, ObjectType, Topology, CPUBIND_THREAD};
 
 use env_logger;
 
-use protostore::handle_client;
-
+use protostore::{ProtostoreServer, TableOfContents};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -33,6 +33,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         cores.len(),
         processing_units.len()
     );
+
+    //
+    // Read Table of Contents
+    //
+    let data_dir = Path::new("./db");
+    let toc =
+        Arc::new(TableOfContents::from_path(data_dir).expect("Could not open table of contents"));
+    let max_value_len = toc.max_len();
+
+    //
+    // Create threads for handling client comms
+    //
 
     let num_tcp_threads = 5;
     let mut tcp_threads = vec![];
@@ -79,8 +91,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let tcp_idx = tcp_handles_index.fetch_add(1, Ordering::SeqCst) % num_tcp_threads;
         let tcp_handle = &tcp_handles[tcp_idx];
 
+        let toc = toc.clone();
         let _r = tcp_handle.spawn(async move {
-            let _ = handle_client(socket).await;
+            let server = ProtostoreServer::new(socket, toc);
+            let _ = server.handle_client().await;
         });
     }
 }
