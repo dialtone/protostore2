@@ -12,9 +12,9 @@ env_logger = "0.6"
 libc = "*"
 #libaio = { git = "https://github.com/dialtone/libaio-rust.git", rev="30bf867" }
 #eventfd = { git = "https://github.com/dialtone/eventfd-rust.git", rev="42938a2c05bd" }
-tokio = "0.2.0-alpha.1"
-tokio-io = "0.2.0-alpha.1"
-futures-preview = { version = "=0.3.0-alpha.17", features = ["async-await", "nightly"] }
+tokio = "0.2.0-alpha.2"
+tokio-io = "0.2.0-alpha.2"
+futures-preview = { version = "=0.3.0-alpha.18", features = ["async-await", "nightly"] }
 #hwloc = { path = "../hwloc-rs" }
 hwloc = "0.5"
 bytes = "0.4"

@@ -63,6 +63,12 @@ impl ProtostoreServer {
     }
 
     fn respond_read(&self, req: &Request) -> Response {
+        if self.short_circuit_reads {
+            return Response {
+                id: 32,
+                body: Bytes::from(&b"read"[..]),
+            };
+        }
         Response {
             id: 32,
             body: Bytes::from(&b"read"[..]),
