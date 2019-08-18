@@ -34,6 +34,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         processing_units.len()
     );
 
+    let short_circuit_reads = false;
+
     //
     // Read Table of Contents
     //
@@ -93,7 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let toc = toc.clone();
         let _r = tcp_handle.spawn(async move {
-            let server = ProtostoreServer::new(socket, toc);
+            let mut server = ProtostoreServer::new(socket, toc, max_value_len, short_circuit_reads);
             let _ = server.handle_client().await;
         });
     }
