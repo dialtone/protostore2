@@ -1,4 +1,5 @@
 use log::{error, trace};
+use std::cmp;
 use std::sync::Arc;
 
 use tokio::codec::Framed;
@@ -33,7 +34,7 @@ impl ProtostoreServer {
         }
     }
 
-    pub async fn handle_client(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn handle_client(&mut self) -> Result<(), std::io::Error> {
         trace!("handle client from tid {:?}", unsafe {
             libc::pthread_self()
         });
@@ -42,12 +43,12 @@ impl ProtostoreServer {
         while let Some(request) = self.client.next().await {
             let response = match request {
                 Ok(ref req) => match req.reqtype {
-                    RequestType::Read => self.respond_read(req),
-                    RequestType::Write => self.respond_write(req),
+                    RequestType::Read => self.respond_read(req).await?,
+                    RequestType::Write => self.respond_write(req).await?,
                 },
                 Err(e) => {
                     error!("failed to read from client; err = {:?}", e);
-                    return Ok(());
+                    return Err(e);
                 }
             };
             match self.client.send(response).await {
@@ -55,30 +56,42 @@ impl ProtostoreServer {
                 // Error sending disconnects
                 Err(e) => {
                     error!("failed to send to client; err = {:?}", e);
-                    return Ok(());
+                    return Err(e);
                 }
             }
         }
         Ok(())
     }
 
-    fn respond_read(&self, req: &Request) -> Response {
+    async fn respond_read(&self, req: &Request) -> Result<Response, std::io::Error> {
         if self.short_circuit_reads {
-            return Response {
-                id: 32,
-                body: Bytes::from(&b"read"[..]),
-            };
+            return Ok(Response {
+                id: req.id,
+                body: Bytes::from(vec![0, 1, 2, 3]),
+            });
         }
-        Response {
-            id: 32,
-            body: Bytes::from(&b"read"[..]),
+
+        if let Some((offset, len)) = self.toc.offset_and_len(&req.uuid) {
+            let aligned_offset = offset - (offset % 512);
+            let pad_left = offset - aligned_offset;
+            let padded = pad_left + len as u64;
+            let aligned_len = cmp::max(512, padded + 512 - (padded as u64 % 512));
+            Ok(Response {
+                id: req.id,
+                body: Bytes::from(&b"read"[..]),
+            })
+        } else {
+            Ok(Response {
+                id: req.id,
+                body: Bytes::new(),
+            })
         }
     }
 
-    fn respond_write(&self, req: &Request) -> Response {
-        Response {
-            id: 32,
+    async fn respond_write(&self, req: &Request) -> Result<Response, std::io::Error> {
+        Ok(Response {
+            id: req.id,
             body: Bytes::from(&b"write"[..]),
-        }
+        })
     }
 }

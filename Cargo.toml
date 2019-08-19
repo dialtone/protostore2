@@ -3,6 +3,7 @@ name = "protostore"
 version = "0.1.0"
 authors = ["dialtone <dialtone@adroll.com>"]
 edition = "2018"
+default-run = "protostore"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -19,6 +20,12 @@ futures-preview = { version = "=0.3.0-alpha.18", features = ["async-await", "nig
 hwloc = "0.5"
 bytes = "0.4"
 memmap = "0.7"
+rayon = "1.1"
+uuid = { version = "0.7", features = ["v4"] }
+rand = { version = "0.7", features = ["small_rng"]}
+clap = "2.33"
+
 
 [dev-dependencies]
 tempdir = "*"
+

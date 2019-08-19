@@ -33,9 +33,6 @@ impl TableOfContents {
         let uuid_mmap = unsafe { memmap::Mmap::map(&uuids_file)? };
         let offsets_mmap = unsafe { memmap::Mmap::map(&offsets_file)? };
         let lens_mmap = unsafe { memmap::Mmap::map(&lens_file)? };
-        //memmap::Mmap::open_path(uuids_path, memmap::Protection::Read)?;
-        //let offsets_mmap = memmap::Mmap::open_path(offsets_path, memmap::Protection::Read)?;
-        //let lens_mmap = memmap::Mmap::open_path(lens_path, memmap::Protection::Read)?;
 
         let uuids = unsafe {
             let slice = &uuid_mmap[..];
