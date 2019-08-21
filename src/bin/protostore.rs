@@ -43,12 +43,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let toc =
         Arc::new(TableOfContents::from_path(data_dir).expect("Could not open table of contents"));
     let max_value_len = toc.max_len();
+    debug!("TOC len {:?}", max_value_len);
 
     //
     // Create threads for handling client comms
     //
 
-    let num_tcp_threads = 5;
+    let num_tcp_threads = 8;
     let mut tcp_threads = vec![];
 
     let (remote_tx, remote_rx) = mpsc::channel();
@@ -102,6 +103,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn hwloc_processing_units() -> Vec<CpuSet> {
+    if cfg!(target_os = "macos") {
+        return (0..8).into_iter().map(|x| CpuSet::from(x)).collect();
+    }
     let topo = Topology::new();
     let cores = topo.objects_with_type(&ObjectType::PU).unwrap();
     cores
@@ -111,6 +115,9 @@ fn hwloc_processing_units() -> Vec<CpuSet> {
 }
 
 fn hwloc_cores() -> Vec<CpuSet> {
+    if cfg!(target_os = "macos") {
+        return (0..4).into_iter().map(|x| CpuSet::from(x)).collect();
+    }
     let topo = Topology::new();
     let cores = topo.objects_with_type(&ObjectType::Core).unwrap();
     cores
@@ -120,6 +127,10 @@ fn hwloc_cores() -> Vec<CpuSet> {
 }
 
 fn bind_thread_to_processing_unit(thread: libc::pthread_t, idx: usize) {
+    if cfg!(target_os = "macos") {
+        return;
+    }
+
     let mut topo = Topology::new();
     let bind_to = match topo.objects_with_type(&ObjectType::PU).unwrap().get(idx) {
         Some(val) => val.cpuset().unwrap(),

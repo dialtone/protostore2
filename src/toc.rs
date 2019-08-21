@@ -6,6 +6,7 @@ use std::slice::from_raw_parts;
 
 use memmap;
 
+#[derive(Debug)]
 pub struct TableOfContents {
     uuids: Vec<[u8; 16]>,
     offsets: Vec<u64>,

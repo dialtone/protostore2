@@ -51,6 +51,7 @@ impl ProtostoreServer {
                     return Err(e);
                 }
             };
+            trace!("Responding {:?}", response);
             match self.client.send(response).await {
                 Ok(_) => (),
                 // Error sending disconnects
@@ -70,8 +71,10 @@ impl ProtostoreServer {
                 body: Bytes::from(vec![0, 1, 2, 3]),
             });
         }
-
-        if let Some((offset, len)) = self.toc.offset_and_len(&req.uuid) {
+        trace!("Searching for: {:?}", req);
+        let offset_and_len = self.toc.offset_and_len(&req.uuid);
+        trace!("Offset and len: {:?}", offset_and_len);
+        if let Some((offset, len)) = offset_and_len {
             let aligned_offset = offset - (offset % 512);
             let pad_left = offset - aligned_offset;
             let padded = pad_left + len as u64;

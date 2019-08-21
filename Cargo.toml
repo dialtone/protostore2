@@ -11,21 +11,23 @@ default-run = "protostore"
 log = "0.4"
 env_logger = "0.6"
 libc = "*"
-#libaio = { git = "https://github.com/dialtone/libaio-rust.git", rev="30bf867" }
-#eventfd = { git = "https://github.com/dialtone/eventfd-rust.git", rev="42938a2c05bd" }
+clap = "2.33"
+
 tokio = "0.2.0-alpha.2"
 tokio-io = "0.2.0-alpha.2"
 futures-preview = { version = "=0.3.0-alpha.18", features = ["async-await", "nightly"] }
-#hwloc = { path = "../hwloc-rs" }
-hwloc = "0.5"
+
 bytes = "0.4"
 memmap = "0.7"
 rayon = "1.1"
 uuid = { version = "0.7", features = ["v4"] }
 rand = { version = "0.7", features = ["small_rng"]}
-clap = "2.33"
+
+# these next are a bit messy as they are somewhat platform dependent.
+hwloc = "0.5"
+#libaio = { git = "https://github.com/dialtone/libaio-rust.git", rev="30bf867" }
+#eventfd = { git = "https://github.com/dialtone/eventfd-rust.git", rev="42938a2c05bd" }
 
 
 [dev-dependencies]
 tempdir = "*"
-
