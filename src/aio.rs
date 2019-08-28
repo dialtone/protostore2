@@ -18,6 +18,7 @@ use libaio::directio::DirectFile;
 use libaio::raw::{IoOp, Iocontext};
 use std::os::unix::io::AsRawFd;
 
+use tokio::runtime::current_thread;
 use tokio_net::util::PollEvented;
 
 use libc;
@@ -63,8 +64,7 @@ impl Session {
 
         // Spawn a thread with it's own event loop dedicated to AIO
         let t = thread::spawn(move || {
-            let mut core = Core::new().unwrap();
-            let handle = core.handle();
+            let mut core = current_thread::Runtime::new().unwrap();
 
             // Return the pthread id so the main thread can bind this
             // thread to a specific core
@@ -86,7 +86,7 @@ impl Session {
             // Add the eventfd to the file descriptors we are
             // interested in. This will use epoll under the hood.
             let source = AioEventFd { inner: evfd };
-            let stream = PollEvented::new(source, &handle);
+            let stream = PollEvented::new(source);
 
             let fut = AioThread {
                 rx: rx,
@@ -100,8 +100,8 @@ impl Session {
                     ..Default::default()
                 },
             };
-
-            core.run(fut).unwrap();
+            core.spawn(fut);
+            core.run().unwrap();
         });
 
         let tid = executor::block_on(tid_rx).unwrap();
@@ -146,7 +146,7 @@ struct AioStats {
 }
 
 impl Future for AioThread {
-    type Output = Result<(), io::Error>;
+    type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         trace!(
@@ -158,7 +158,11 @@ impl Future for AioThread {
 
         // If there are any responses from the kernel available, read
         // as many as we can without blocking.
-        if self.stream.poll_read().is_ready() {
+        let ready = mio::Ready::readable();
+        if Pin::new(&mut self.stream)
+            .poll_read_ready(cx, ready)
+            .is_ready()
+        {
             match self.ctx.results(0, 100, None) {
                 Ok(res) => {
                     trace!("    got {} AIO responses", res.len());
@@ -209,7 +213,7 @@ impl Future for AioThread {
 
         // Read all available incoming requests, enqueue in AIO batch
         loop {
-            let msg = match self.rx.poll_next(cx) {
+            let msg = match Pin::new(&mut self.rx).poll_next(cx) {
                 Poll::Ready(Some(msg)) => msg,
                 Poll::Ready(None) => break,
                 Poll::Pending => break, // AioThread.poll is automatically scheduled
@@ -274,8 +278,10 @@ impl Future for AioThread {
 
         let need_read = self.handles_pread.len() > 0 || self.handles_pwrite.len() > 0;
         if need_read {
-            trace!("    calling stream.need_read()");
-            self.stream.need_read();
+            // Not sure I totally understand how the old need_read works vs the
+            // new clear_read_ready call.
+            trace!("    calling stream.clear_read_ready()");
+            Pin::new(&mut self.stream).clear_read_ready(cx, ready);
         }
 
         // Print some useful stats
