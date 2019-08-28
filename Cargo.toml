@@ -8,26 +8,33 @@ default-run = "protostore"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+# general utility stuff
 log = "0.4"
 env_logger = "0.6"
 libc = "*"
 clap = "2.33"
-
-tokio = "0.2.0-alpha.2"
-tokio-io = "0.2.0-alpha.2"
-futures-preview = { version = "=0.3.0-alpha.18", features = ["async-await", "nightly"] }
-
+hwloc = "0.5"
 bytes = "0.4"
 memmap = "0.7"
 rayon = "1.1"
 uuid = { version = "0.7", features = ["v4"] }
 rand = { version = "0.7", features = ["small_rng"]}
 
-# these next are a bit messy as they are somewhat platform dependent.
-hwloc = "0.5"
-#libaio = { git = "https://github.com/dialtone/libaio-rust.git", rev="30bf867" }
-#eventfd = { git = "https://github.com/dialtone/eventfd-rust.git", rev="42938a2c05bd" }
+# async programming frameworks
+tokio = "0.2.0-alpha.2"
+tokio-io = "0.2.0-alpha.2"
+tokio-net = "0.2.0-alpha.2"
+futures-preview = { version = "=0.3.0-alpha.18", features = ["async-await", "nightly"] }
+mio = "0.6"
 
+# these next are a bit messy as they are somewhat platform dependent, they are
+# the root of the async functionality.
+libaio = { git = "https://github.com/dialtone/libaio-rust.git", rev="30bf867" }
+eventfd = { git = "https://github.com/dialtone/eventfd-rust.git", rev="42938a2c05bd" }
+
+# used to allocate memory for io
+slab = "0.4"
 
 [dev-dependencies]
 tempdir = "*"

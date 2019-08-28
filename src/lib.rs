@@ -1,5 +1,6 @@
 #![feature(async_await)]
 
+mod aio;
 mod protocol;
 mod server;
 mod toc;
