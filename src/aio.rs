@@ -148,7 +148,7 @@ struct AioStats {
 impl Future for AioThread {
     type Output = ();
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         trace!(
             "============ AioThread.poll (inflight_preads:{} inflight_pwrites:{})",
             self.handles_pread.len(),
@@ -223,10 +223,20 @@ impl Future for AioThread {
                 Message::PRead(file, offset, len, buf, complete) => {
                     self.stats.curr_preads += 1;
 
-                    let entry = self.handles_pread.vacant_entry();
-                    //.expect("No more free pread handles!");
+                    // The self is a Pin<&mut Self>. Obtaining mutable references to the fields
+                    // will require going through DerefMut, which requires unique borrow.
+                    // You can avoid the issue by dereferencing self once on entry to the method
+                    // let this = &mut *self, and then continue accessing it
+                    // through this.
+                    // The basic idea is that each access to self.deref_mut()
+                    // basically will create a new mutable reference to self, if
+                    // you do it multiple times you get the error, so by
+                    // effectively calling deref_mut by hand I can save the
+                    // reference once and use it when needed.
+                    let this = &mut *self;
+                    let entry = this.handles_pread.vacant_entry();
                     let key = entry.key();
-                    match self.ctx.pread(&file, buf, offset as i64, len, key) {
+                    match this.ctx.pread(&file, buf, offset as i64, len, key) {
                         Ok(()) => {
                             entry.insert(HandleEntry { complete: complete });
                         }
@@ -238,16 +248,16 @@ impl Future for AioThread {
                                 )))
                                 .expect("Could not send AioThread error response");
                         }
-                    }
+                    };
                 }
 
                 Message::PWrite(file, offset, buf, complete) => {
                     self.stats.curr_pwrites += 1;
 
-                    let entry = self.handles_pwrite.vacant_entry();
-                    //.expect("No more free pwrite handles!");
+                    let this = &mut *self;
+                    let entry = this.handles_pwrite.vacant_entry();
                     let key = entry.key();
-                    match self.ctx.pwrite(&file, buf, offset as i64, key) {
+                    match this.ctx.pwrite(&file, buf, offset as i64, key) {
                         Ok(()) => {
                             entry.insert(HandleEntry { complete: complete });
                         }

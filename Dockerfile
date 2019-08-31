@@ -7,7 +7,7 @@ ENV RUSTUP_HOME=/usr/local/rustup \
 RUN apt update
 RUN apt upgrade -y
 RUN apt install -y curl libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
-RUN apt install -y g++ gcc automake make autoconf
+RUN apt install -y g++ gcc automake make autoconf libaio-dev libhwloc-dev
 RUN apt install -y llvm llvm-dev libclang-dev clang-tools clang iproute2 iputils-ping
 
 RUN set -eux; \

@@ -1,5 +1,3 @@
-#![feature(async_await)]
-
 use tokio::net::TcpListener;
 
 use tokio::runtime::current_thread;
